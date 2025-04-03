@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect
 #from django.http import HttpResponse, Http404
-from .models import Mentorado, Navigator
+from .models import Mentorado, Navigator, DisponibilidadeHorario
 from django.contrib import messages
 from django.contrib.messages import constants
+from datetime import datetime, timedelta
+
 
 # Create your views here.
 def mentorados(request):
@@ -26,8 +28,9 @@ def mentorados(request):
                             'navigators' : navigators, 
                             'mentorados' : mentorados, 
                             'stages_flat' : stages_flat, 
-                            'qtd_stages' : qtd_stages}
-                    )
+                            'qtd_stages' : qtd_stages
+                        }
+        )
 
     if(request.method == "POST"):
         nome = request.POST.get('nome')
@@ -44,5 +47,62 @@ def mentorados(request):
         )
 
         mentorado.save()
-        messages.add_message(request, constants.SUCCESS, 'Mentorado cadastrado com sucesso.')
+        messages.add_message(
+            request, 
+            constants.SUCCESS, 
+            'Mentorado cadastrado com sucesso.'
+        )
         return redirect('mentorados')
+
+
+def reunioes(request):
+    if(request.method == "GET"):
+        return render(request, 'reunioes.html')
+    if(request.method == "POST"):
+        date = request.POST.get('data')
+        date = datetime.strptime(date, '%Y-%m-%dT%H:%M')
+
+        disps = DisponibilidadeHorario.objects.filter(mentor=request.user).filter(
+            #gte -> maior ou igual
+            init_date__gte=(date - timedelta(minutes=50)),
+            init_date__lte=(date + timedelta(minutes=50))
+        )
+
+        if(disps.exists()):
+            messages.add_message(
+                request, 
+                constants.ERROR, 
+                'Você já possui uma reunião em aberto.'
+            )
+            return redirect('reunioes')
+        
+        disp = DisponibilidadeHorario(
+            init_date = date,
+            mentor = request.user
+        )
+
+        disp.save()
+        messages.add_message(
+            request, 
+            constants.SUCCESS, 
+            'Horário disponibilizado com sucesso.'
+        )
+        return redirect('reunioes')
+    
+
+def auth(request):
+    if(request.method == "GET"):
+        return render(request, 'auth_mentorado.html')
+    if(request.method == "POST"):
+        token = request.POST.get("token")
+        mentorado = Mentorado.objects.filter(token=token)
+        if (not Mentorado.objects.filter(token=token).exists()):
+            messages.add_message(request, constants.ERROR, 'Token inválido')
+            return redirect('auth_mentorado')
+        
+        response = redirect('escolher_dia')
+        response.set_cookie('auth_token', token, max_age=3600)
+
+        return response
+
+#parei na aula 2 - 1:12:40
