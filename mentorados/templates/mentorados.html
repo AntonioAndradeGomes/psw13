@@ -96,9 +96,11 @@
                     </div>
                 </form>
             </div>
+
             <div class="flex justify-center items-center w-1/2 mx-auto">
                 <canvas id="myChart" class="w-24 h-24"></canvas>
             </div>
+
         </div>
         <div class="mt-6">
             <hr class="border-gray-600">
@@ -162,4 +164,27 @@
         </div>
     </div>
 </div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  const ctx = document.getElementById('myChart');
+
+  new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: {{stages_flat|safe}},
+      datasets: [{
+        label: '',
+        data: {{qtd_stages|safe}},
+        borderWidth: 1
+      }]
+    },
+    options: {
+      
+    }
+  });
+</script>
+ 
 {% endblock 'body' %}
