@@ -89,3 +89,26 @@ class DisponibilidadeHorario(models.Model):
     class Meta:
         verbose_name = 'Disponibilidade de Horário'
         verbose_name_plural = 'Disponibilidade de Horários'
+
+
+class Reuniao(models.Model):
+    tag_choices = (
+        ('G', 'Gestão'),
+        ('M', 'Marketing'),
+        ('RH', 'Gestão de Pessoas'),
+        ('I', 'Impostos'),
+    )
+    data = models.ForeignKey(DisponibilidadeHorario, on_delete=models.CASCADE, verbose_name="Data")
+    mentorado = models.ForeignKey(Mentorado, on_delete=models.CASCADE, verbose_name="Mentorado")
+    tag = models.CharField(max_length=2, choices=tag_choices, verbose_name="Tag")
+    description = models.TextField(verbose_name="Descrição")
+    created_at = models.DateField(auto_now_add=True, verbose_name="Data de criação")
+
+    def __str__(self):
+        return str(self.data.init_date)
+    
+    class Meta:
+        verbose_name = 'Reunião'
+        verbose_name_plural = 'Reuniões'
+
+    

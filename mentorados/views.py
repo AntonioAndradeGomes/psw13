@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect
 #from django.http import HttpResponse, Http404
-from .models import Mentorado, Navigator, DisponibilidadeHorario
+from .models import Mentorado, Navigator, DisponibilidadeHorario, Reuniao
 from django.contrib import messages
 from django.contrib.messages import constants
 from datetime import datetime, timedelta
+from .auth import validate_token
 
 
 # Create your views here.
@@ -105,4 +106,39 @@ def auth(request):
 
         return response
 
-#parei na aula 2 - 1:12:40
+def escolher_dia(request):
+    if(not validate_token(request.COOKIES.get('auth_token'))):
+        return redirect('auth_mentorado')
+    if(request.method == "GET"):
+        mentorado = validate_token(request.COOKIES.get('auth_token'))
+        disp = DisponibilidadeHorario.objects.filter(
+            init_date__gte=datetime.now(),
+            is_scheduled = False,
+            mentor=mentorado.user
+        ).values_list('init_date', flat=True)
+        dates = []
+        for i in disp:
+            dates.append(i.strftime('%d-%m-%Y'))
+        dates = list(set(dates))
+
+        #todo: ordenar e tornar o mes e dia da semana dinâmicos
+        return render(request, 'escolher_dia.html',{'horarios': dates})
+
+def agendar_reuniao(request):
+    if (not validate_token(request.COOKIES.get('auth_token'))):
+        return redirect('auth_mentorado')
+    
+    if(request.method == "GET"):
+        data = request.GET.get('data')
+        data = datetime.strptime(data, '%d-%m-%Y')
+        mentorado = validate_token(request.COOKIES.get('auth_token'))
+        hors = DisponibilidadeHorario.objects.filter(
+            init_date__gte=data,
+            init_date__lt=data + timedelta(days=1),
+            is_scheduled=False,
+            mentor=mentorado.user
+        )
+        print(hors.first().init_date.time())
+
+        return render(request, 'agendar_reuniao.html', {'horarios': hors, 'tags' : Reuniao.tag_choices})
+    
